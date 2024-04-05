@@ -22,7 +22,7 @@ def rudolph_turn(t):
 
 
 def find_closest_santa():
-    min_distance = 2*N
+    min_distance = N**2
     target_row, target_col = -1, -1
     for n in range(1, P+1):
         if not santa_list[n]["alive"]:
