@@ -1,209 +1,168 @@
-def move_rudolph(t):
-    global Rr, Rc
-    graph[Rr][Rc] = 0
-
-    # 가장 가까운 산타를 확인하고 돌진
-    [target_row, target_col] = find_santa()
-
-    # 이동
-    movRow, movCol = where_to_move_rudolph(Rr, Rc, target_row, target_col)
-    Rr, Rc = Rr + movRow, Rc + movCol
-
-    targetNum = graph[target_row][target_col]
-    if graph[Rr][Rc] > 0:
-        bang("루돌프", targetNum, target_row, target_col, movRow, movCol, t)
-
-    # 이동 완료
-    graph[Rr][Rc] = -1
+def is_inRange(row, col):
+    return 0 < row <= N and 0 < col <= N
 
 
-def find_santa():
-    nearby_santa = {}
-    min_distance = 2 * N
-    for num in range(1, P + 1):
-        target = santa_list[num]
-        if target["탈락"]:
+def calculate_distance(start_row, start_col, end_row, end_col):
+    return (start_row - end_row) ** 2 + (start_col - end_col) ** 2
+
+
+def rudolph_turn(t):
+    global rudolph_row, rudolph_col
+    closest_row, closest_col = find_closest_santa()
+    move_row, move_col = find_direction(closest_row, closest_col)
+
+    board[rudolph_row][rudolph_col] = 0
+    rudolph_row, rudolph_col = rudolph_row + move_row, rudolph_col + move_col
+    if board[rudolph_row][rudolph_col] > 0:
+        target_santa_num = board[rudolph_row][rudolph_col]
+        # 누가, 언제, 누구를, 어떻게
+        bang("rudolph", t, target_santa_num, move_row, move_col, rudolph_row, rudolph_col)
+
+    board[rudolph_row][rudolph_col] = -1
+
+
+def find_closest_santa():
+    min_distance = 2*N
+    target_row, target_col = -1, -1
+    for n in range(1, P+1):
+        if not santa_list[n]["alive"]:
             continue
 
-        distance = cal_distance(Rr, Rc, target["row"], target["col"])
-        if not nearby_santa:
-            nearby_santa = target
-            min_distance = distance
-        elif min_distance > distance:
-            nearby_santa = target
-            min_distance = distance
-        elif min_distance == distance and nearby_santa["row"] < target["row"]:
-            nearby_santa = target
+        distance = calculate_distance(santa_list[n]["row"], santa_list[n]["col"], rudolph_row, rudolph_col)
+        if ((distance < min_distance) or (distance == min_distance and target_row < santa_list[n]["row"])
+                or (distance == min_distance and target_row == santa_list[n]["row"] and target_col < santa_list[n]["col"])):
+            target_row, target_col = santa_list[n]["row"], santa_list[n]["col"]
             min_distance = distance
 
-    return nearby_santa["row"], nearby_santa["col"]
+    return target_row, target_col
 
 
-def where_to_move_rudolph(startRow, startCol, endRow, endCol):
-    movRow = 0
-    if startRow < endRow:
-        movRow = 1
-    elif startRow > endRow:
-        movRow = -1
+def find_direction(target_row, target_col):
+    move_row = 0
+    if rudolph_row < target_row:
+        move_row = 1
+    elif rudolph_row > target_row:
+        move_row = -1
 
-    movCol = 0
-    if startCol < endCol:
-        movCol = 1
-    elif startCol > endCol:
-        movCol = -1
+    move_col = 0
+    if rudolph_col < target_col:
+        move_col = 1
+    elif rudolph_col > target_col:
+        move_col = -1
 
-    return movRow, movCol
-
-
-def cal_distance(ar, ac, br, bc):
-    return (ar - br) ** 2 + (ac - bc) ** 2
+    return move_row, move_col
 
 
-def move_santa(t):
-    for num in range(1, P + 1):
-        # 만약 탈락이거나 스턴상태이면 continue
-        if santa_list[num]["탈락"] or santa_list[num]["stun"] >= t:
+def santa_turn(t):
+    # 산타는 1번부터 P번까지 순서대로 움직입니다.
+    for n in range(1, P+1):
+        # 기절했거나 이미 게임에서 탈락한 산타는 움직일 수 없습니다.
+        if not santa_list[n]["alive"] or santa_list[n]["stun"] >= t:
             continue
 
-        moveDir = where_to_move_santa(num)
+        min_distance = calculate_distance(santa_list[n]["row"], santa_list[n]["col"], rudolph_row, rudolph_col)
+        move_direction = -1
+        for d in range(4):
+            # 산타는 루돌프에게 거리가 가장 가까워지는 방향으로 1칸 이동합니다.
+            row = santa_list[n]["row"] + dr[d]
+            col = santa_list[n]["col"] + dc[d]
 
-        # 산타가 움직였을 때 액션
-        if moveDir != -1:
-            newRow = santa_list[num]["row"] + dr[moveDir]
-            newCol = santa_list[num]["col"] + dc[moveDir]
+            # 산타는 다른 산타가 있는 칸이나 게임판 밖으로는 움직일 수 없습니다.
+            if not is_inRange(row, col) or board[row][col] > 0:
+                continue
 
-            if graph[newRow][newCol] == -1 and D > 1:
-                # 루돌프와 충돌했을 때 충돌 액션
-                bang("산타", num, newRow, newCol, -dr[moveDir], -dc[moveDir], t)
-            elif graph[newRow][newCol] == -1 and D == 1:
-                # 충돌 거리가 1일 경우 제자리
-                santa_list[num]["score"] += D
+            # 움직일 수 있는 칸이 있더라도 만약 루돌프로부터 가까워질 수 있는 방법이 없다면 산타는 움직이지 않습니다.
+            distance = calculate_distance(row, col, rudolph_row, rudolph_col)
+            if distance < min_distance:
+                move_direction = d
+                min_distance = distance
+
+        if move_direction != -1:
+            new_row, new_col = santa_list[n]["row"] + dr[move_direction], santa_list[n]["col"] + dc[move_direction]
+            if board[new_row][new_col] == -1:
+                bang("santa", t, n, -dr[move_direction], -dc[move_direction], new_row, new_col)
             else:
-                # 충돌하지 않았을 경우
-                graph[santa_list[num]["row"]][santa_list[num]["col"]] = 0
-                santa_list[num]["row"], santa_list[num]["col"] = newRow, newCol
-                graph[newRow][newCol] = num
+                board[santa_list[n]["row"]][santa_list[n]["col"]] = 0
+                santa_list[n]["row"], santa_list[n]["col"] = new_row, new_col
+                board[new_row][new_col] = n
 
 
-def where_to_move_santa(num):
-    global Rr, Rc
+def bang(who, when, where, row_direction, col_direction, row, col):
+    # 기절
+    santa_list[where]["stun"] = when + 1
 
-    min_distance = cal_distance(santa_list[num]["row"], santa_list[num]["col"], Rr, Rc)
-    moveDir = -1
-
-    # 움직일 수 있는 방향 확인
-    for i in range(4):
-        newRow = santa_list[num]["row"] + dr[i]
-        newCol = santa_list[num]["col"] + dc[i]
-
-        if not is_inRange(newRow, newCol) or graph[newRow][newCol] > 0:
-            continue
-
-        new_distance = cal_distance(newRow, newCol, Rr, Rc)
-        if new_distance < min_distance:
-            min_distance = new_distance
-            moveDir = i
-
-    return moveDir
-
-
-def bang(who, targetNum, targetRow, targetCol, movRow, movCol, turn):
-    # 루돌프의 충돌일 경우
-    if who == "루돌프":
-        # 루돌프의 충돌 방향으로 이동
-        firstRow, firstCol = targetRow + movRow * C, targetCol + movCol * C
+    # 점수 획득 후 밀려남
+    if who == "rudolph":
+        santa_list[where]["score"] += C
+        first_row, first_col = row + C * row_direction, col + C * col_direction
     else:
-        firstRow, firstCol = targetRow + movRow * D, targetCol + movCol * D
+        santa_list[where]["score"] += D
+        first_row, first_col = row + D * row_direction, col + D * col_direction
 
-    lastRow, lastCol = firstRow, firstCol
+    last_row, last_col = first_row, first_col
 
-    # 해당 산타 스턴
-    santa_list[targetNum]["stun"] = turn + 1
+    # 상호작용
+    while is_inRange(last_row, last_col) and board[last_row][last_col] > 0:
+        last_row += row_direction
+        last_col += col_direction
 
-    # 만약 산타가 그 위치에 있다면 한칸 더 이동
-    while is_inRange(lastRow, lastCol) and graph[firstRow][firstCol] > 0:
-        lastRow += movRow
-        lastCol += movCol
+    while not (last_row == first_row and last_col == first_col):
+        before_row, before_col = last_row - row_direction, last_col - col_direction
+        target_santa = board[before_row][before_col]
 
-    # 충돌한 산타들을 이동
-    while not (lastRow == firstRow and lastCol == firstCol):
-        # 원래 있던 위치를 구함
-        beforeRow = lastRow - movRow
-        beforeCol = lastCol - movCol
-
-        # 원래 장외였으면 종료
-        if not is_inRange(beforeRow, beforeCol):
-            break
-
-        num = graph[beforeRow][beforeCol]
-        # 장외가 된 거면 탈락
-        if not is_inRange(lastRow, lastCol):
-            santa_list[num]["탈락"] = True
+        if not is_inRange(last_row, last_col):
+            santa_list[target_santa]["alive"] = False
+            board[before_row][before_col] = 0
         else:
-            graph[lastRow][lastCol] = graph[beforeRow][beforeCol]
-            santa_list[num]["row"], santa_list[num]["col"] = lastRow, lastCol
+            board[last_row][last_col], board[before_row][before_col] = board[before_row][before_col], 0
 
-        lastRow, lastCol = beforeRow, beforeCol
+        santa_list[target_santa]["row"], santa_list[target_santa]["col"] = last_row, last_col
+        last_row, last_col = before_row, before_col
 
-    # 포인트 갱신
-    if who == "루돌프":
-        santa_list[targetNum]["score"] += C
+    board[santa_list[where]["row"]][santa_list[where]["col"]] = 0
+    if not is_inRange(last_row, last_col):
+        santa_list[where]["alive"] = False
     else:
-        santa_list[targetNum]["score"] += D
-
-    # 위치 갱신
-    graph[santa_list[targetNum]["row"]][santa_list[targetNum]["col"]] = 0
-    santa_list[targetNum]["row"], santa_list[targetNum]["col"] = firstRow, firstCol
-    if is_inRange(firstRow, firstCol):
-        graph[firstRow][firstCol] = targetNum
-    else:
-        santa_list[targetNum]["탈락"] = True
+        board[last_row][last_col] = where
+        santa_list[where]["row"], santa_list[where]["col"] = last_row, last_col
 
 
-def is_inRange(x, y):
-    return 0 < x <= N and 0 < y <= N
+def turn_end_process():
+    nobody_alive = True
+    for n in range(1, P + 1):
+        if santa_list[n]["alive"]:
+            santa_list[n]["score"] += 1
+            nobody_alive = False
 
+    return nobody_alive
 
-def live_santa():
-    for num in range(1, P+1):
-        if santa_list[num]["탈락"]:
-            continue
-        else:
-            santa_list[num]["score"] += 1
-
-
-N, M, P, C, D = map(int, input().split())
-graph = [[0 for _ in range(N + 1)] for _ in range(N + 1)]
 
 dr = [-1, 0, 1, 0]
 dc = [0, 1, 0, -1]
 
-# 루돌프의 위치
-Rr, Rc = map(int, input().split())
-graph[Rr][Rc] = -1
+N, M, P, C, D = map(int, input().split())
+board = [[0 for _ in range(N+1)] for _ in range(N+1)]
+rudolph_row, rudolph_col = map(int, input().split())
+board[rudolph_row][rudolph_col] = -1
 
-# 산타의 위치
-santa_list = [{}]
+santa_list = [{} for _ in range(P+1)]
 for _ in range(P):
-    # 산타 번호, row, col, 점수, 탈락 여부(True면 탈락)
     santa_num, santa_row, santa_col = map(int, input().split())
-    graph[santa_row][santa_col] = santa_num
-    santa_list.append({
-        "num": santa_num,
+    board[santa_row][santa_col] = santa_num
+    santa_list[santa_num] = {
+        "number": santa_num,
         "row": santa_row,
         "col": santa_col,
-        "score": 0,
         "stun": 0,
-        "탈락": False,
-    })
+        "alive": True,
+        "score": 0
+    }
 
-for turn in range(1, M+1):
-    # 루돌프의 움직임
-    move_rudolph(turn)
-    # 산타의 움직임
-    move_santa(turn)
-    # 생존한 산타 점수 갱신
-    live_santa()
+for turn in range(1, M + 1):
+    rudolph_turn(turn)
+    santa_turn(turn)
+    if turn_end_process():
+        break
 
 answer = []
 for num in range(1, P+1):
