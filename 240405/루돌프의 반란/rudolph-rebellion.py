@@ -84,7 +84,7 @@ def santa_turn(t):
             elif board[new_row][new_col] == -1 and D == 1:
                 # 기절
                 santa_list[n]["stun"] = t + 1
-                santa_list[n]["score"] += 1
+                santa_list[n]["score"] += D
             else:
                 board[santa_list[n]["row"]][santa_list[n]["col"]] = 0
                 santa_list[n]["row"], santa_list[n]["col"] = new_row, new_col
