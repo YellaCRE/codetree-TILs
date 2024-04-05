@@ -82,6 +82,8 @@ def santa_turn(t):
             if board[new_row][new_col] == -1 and D > 1:
                 bang("santa", t, n, -dr[move_direction], -dc[move_direction], new_row, new_col)
             elif board[new_row][new_col] == -1 and D == 1:
+                # 기절
+                santa_list[n]["stun"] = t + 1
                 santa_list[n]["score"] += 1
             else:
                 board[santa_list[n]["row"]][santa_list[n]["col"]] = 0
