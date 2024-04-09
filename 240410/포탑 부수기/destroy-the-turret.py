@@ -103,7 +103,7 @@ def laser_attack(atk, tar):
             break
 
         for d in range(4):
-            new_row, new_col = (N + r - 1 + dr[d]) % N + 1, (N + c - 1 + dc[d]) % N + 1
+            new_row, new_col = (N + r - 1 + dr[d]) % N + 1, (M + c - 1 + dc[d]) % M + 1
 
             if board[new_row][new_col] == 0:
                 continue
@@ -134,7 +134,7 @@ def cannon_attack(atk, tar):
     half_damage = damage // 2
     for r in range(-1, 2):
         for c in range(-1, 2):
-            new_row, new_col = (N + tar[0] - 1 + r) % N + 1, (N + tar[1] - 1 + c) % N + 1
+            new_row, new_col = (N + tar[0] - 1 + r) % N + 1, (M + tar[1] - 1 + c) % M + 1
             if new_row == atk[0] and new_col == atk[1]:
                 continue
 
