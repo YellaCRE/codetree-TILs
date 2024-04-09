@@ -146,13 +146,17 @@ def cannon_attack(atk, tar):
 
 
 def repair_phase():
+    alive_cnt = 0
     for r in range(1, N+1):
         for c in range(1, M+1):
             if board[r][c] == 0:
                 continue
+            alive_cnt += 1
             if (r, c) in repair_exception_list:
                 continue
             board[r][c] += 1
+
+    return alive_cnt
 
 
 N, M, K = map(int, input().split())
@@ -174,7 +178,8 @@ for turn in range(1, K+1):
     if not laser_attack(attacker, target):
         cannon_attack(attacker, target)
 
-    repair_phase()
+    if repair_phase() < 2:
+        break
 
 answer = 0
 for row in range(1, N+1):
