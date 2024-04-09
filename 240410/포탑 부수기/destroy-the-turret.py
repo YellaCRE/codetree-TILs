@@ -135,7 +135,7 @@ def cannon_attack(atk, tar):
     for r in range(-1, 2):
         for c in range(-1, 2):
             new_row, new_col = (N + tar[0] - 1 + r) % N + 1, (N + tar[1] - 1 + c) % N + 1
-            if new_row == tar[0] and new_col == tar[1]:
+            if new_row == atk[0] and new_col == atk[1]:
                 continue
 
             if new_row == tar[0] and new_col == tar[1]:
