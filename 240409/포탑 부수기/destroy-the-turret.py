@@ -135,7 +135,7 @@ def cannon_attack(atk, tar):
         for c in range(-1, 2):
             new_row, new_col = (N + tar[0] - 1 + r) % N + 1, (N + tar[1] - 1 + c) % N + 1
             if new_row == tar[0] and new_col == tar[1]:
-                board[new_row][new_col] = max(0, board[tar[0]][tar[1]] - damage)
+                board[new_row][new_col] = max(0, board[new_row][new_col] - damage)
             else:
                 board[new_row][new_col] = max(0, board[new_row][new_col] - half_damage)
                 repair_exception_list.add((new_row, new_col))
@@ -160,7 +160,7 @@ for _ in range(N):
 # print(board)
 
 attack_history = [[0 for _ in range(M+1)] for _ in range(N+1)]
-for turn in range(K):
+for turn in range(1, K+1):
     # 초기화
     repair_exception_list = set()
 
