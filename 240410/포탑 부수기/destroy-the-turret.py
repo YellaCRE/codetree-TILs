@@ -83,7 +83,9 @@ def find_target(atk):
                 target_damage = board[tar_row][tar_col]
                 tar_row, tar_col = r, c
 
+    # 공격과 무관하다는 뜻은 공격에 피해를 입은 포탑도 아니라는 뜻입니다.
     tar = (tar_row, tar_col)
+    repair_exception_list.add(tar)
     return tar
 
 
@@ -149,18 +151,14 @@ def cannon_attack(atk, tar):
 
 
 def repair_phase():
-    alive_cnt = 0
     for r in range(1, N+1):
         for c in range(1, M+1):
             if board[r][c] == 0:
                 continue
-            alive_cnt += 1
 
             if (r, c) in repair_exception_list:
                 continue
             board[r][c] += 1
-
-    return alive_cnt
 
 
 N, M, K = map(int, input().split())
@@ -182,10 +180,18 @@ for turn in range(1, K+1):
     # 공격자의 공격
     if not laser_attack(attacker, target):
         cannon_attack(attacker, target)
-    # 포탑 정비
-    if repair_phase() < 2:
-        # 만약 부서지지 않은 포탑이 1개가 된다면 그 즉시 중지됩니다.
+
+    alive_cnt = 0
+    for r in range(1, N + 1):
+        for c in range(1, M + 1):
+            if board[r][c] != 0:
+                alive_cnt += 1
+    if alive_cnt < 2:
         break
+
+    # 포탑 정비
+    repair_phase()
+
 
 answer = 0
 for row in range(1, N+1):
