@@ -89,15 +89,18 @@ def find_target(atk):
     return tar
 
 
-def try_razor_attack(atk, tar):
+def laser_attack(atk, tar):
+    can_attack = False
     q = deque()
-    q.append([atk[0], atk[1], ""])
+    q.append([atk[0], atk[1]])
     visited = [[False for _ in range(M+1)] for _ in range(N+1)]
+    back_visited = [[[-1, -1] for _ in range(M+1)] for _ in range(N+1)]
 
     while q:
-        r, c, history = q.popleft()
+        r, c = q.popleft()
         if r == tar[0] and c == tar[1]:
-            return history
+            can_attack = True
+            break
 
         for d in range(4):
             new_row, new_col = (N + r - 1 + dr[d]) % N + 1, (N + c - 1 + dc[d]) % N + 1
@@ -109,23 +112,20 @@ def try_razor_attack(atk, tar):
                 continue
 
             visited[new_row][new_col] = True
-            q.append([new_row, new_col, history+str(d)])
+            back_visited[new_row][new_col] = [r, c]
+            q.append([new_row, new_col])
 
-    return ""
+    if can_attack:
+        damage = board[atk[0]][atk[1]]
+        board[tar[0]][tar[1]] = max(0, board[tar[0]][tar[1]] - damage)
 
+        cr, cc = back_visited[tar[0]][tar[1]]
+        while not (cr == atk[0] and cc == atk[1]):
+            board[cr][cc] = max(0, board[cr][cc] - damage // 2)
+            repair_exception_list.add((cr, cc))
+            cr, cc = back_visited[cr][cc]
 
-def razor_attack(route, atk, tar):
-    direction_list = list(map(int, list(route)))
-    r, c = atk[0], atk[1]
-
-    damage = board[atk[0]][atk[1]]
-    board[tar[0]][tar[1]] = max(0, board[tar[0]][tar[1]] - damage)
-
-    half_damage = damage // 2
-    for d in direction_list[:-1]:
-        r, c = (N + r - 1 + dr[d]) % N + 1, (N + c - 1 + dc[d]) % N + 1
-        board[r][c] = max(0, board[r][c] - half_damage)
-        repair_exception_list.add((r, c))
+    return can_attack
 
 
 def cannon_attack(atk, tar):
@@ -159,21 +159,18 @@ for _ in range(N):
     board.append(temp)
 # print(board)
 
-repair_exception_list = set()
 attack_history = [[0 for _ in range(M+1)] for _ in range(N+1)]
 for turn in range(K):
+    # 초기화
+    repair_exception_list = set()
+
     attacker = select_attacker(turn)
     target = find_target(attacker)
 
-    razor_attack_route = try_razor_attack(attacker, target)
-    if razor_attack_route != "":
-        razor_attack(razor_attack_route, attacker, target)
-    else:
+    if not laser_attack(attacker, target):
         cannon_attack(attacker, target)
 
     repair_phase()
-    # 초기화
-    repair_exception_list = set()
 
 answer = 0
 for row in range(1, N+1):
