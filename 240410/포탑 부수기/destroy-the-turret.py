@@ -83,9 +83,7 @@ def find_target(atk):
                 target_damage = board[tar_row][tar_col]
                 tar_row, tar_col = r, c
 
-    # 공격과 무관하다는 뜻은 공격에 피해를 입은 포탑도 아니라는 뜻입니다.
     tar = (tar_row, tar_col)
-    repair_exception_list.add(tar)
     return tar
 
 
@@ -132,17 +130,22 @@ def laser_attack(atk, tar):
 def cannon_attack(atk, tar):
     damage = board[atk[0]][atk[1]]
     half_damage = damage // 2
+    # 추가적으로 주위 8개의 방향에 있는 포탑도 피해를 입는데
     for r in range(-1, 2):
         for c in range(-1, 2):
             new_row, new_col = (N + tar[0] - 1 + r) % N + 1, (M + tar[1] - 1 + c) % M + 1
+            # 공격자는 해당 공격에 영향을 받지 않습니다.
             if new_row == atk[0] and new_col == atk[1]:
                 continue
 
             if new_row == tar[0] and new_col == tar[1]:
+                # 공격 대상은 공격자 공격력 만큼의 피해를 받습니다.
                 board[new_row][new_col] = max(0, board[new_row][new_col] - damage)
             else:
+                # 공격자 공격력의 절반 만큼의 피해를 받습니다.
                 board[new_row][new_col] = max(0, board[new_row][new_col] - half_damage)
-                repair_exception_list.add((new_row, new_col))
+
+            repair_exception_list.add((new_row, new_col))
 
 
 def repair_phase():
@@ -152,6 +155,7 @@ def repair_phase():
             if board[r][c] == 0:
                 continue
             alive_cnt += 1
+
             if (r, c) in repair_exception_list:
                 continue
             board[r][c] += 1
@@ -168,17 +172,19 @@ for _ in range(N):
 # print(board)
 
 attack_history = [[0 for _ in range(M+1)] for _ in range(N+1)]
+# 하나의 턴은 다음의 4가지 액션을 순서대로 수행하며, 총 K번 반복됩니다.
 for turn in range(1, K+1):
     # 초기화
     repair_exception_list = set()
-
+    # 공격자 선정
     attacker = select_attacker(turn)
     target = find_target(attacker)
-
+    # 공격자의 공격
     if not laser_attack(attacker, target):
         cannon_attack(attacker, target)
-
+    # 포탑 정비
     if repair_phase() < 2:
+        # 만약 부서지지 않은 포탑이 1개가 된다면 그 즉시 중지됩니다.
         break
 
 answer = 0
