@@ -136,6 +136,9 @@ def cannon_attack(atk, tar):
         for c in range(-1, 2):
             new_row, new_col = (N + tar[0] - 1 + r) % N + 1, (N + tar[1] - 1 + c) % N + 1
             if new_row == tar[0] and new_col == tar[1]:
+                continue
+
+            if new_row == tar[0] and new_col == tar[1]:
                 board[new_row][new_col] = max(0, board[new_row][new_col] - damage)
             else:
                 board[new_row][new_col] = max(0, board[new_row][new_col] - half_damage)
